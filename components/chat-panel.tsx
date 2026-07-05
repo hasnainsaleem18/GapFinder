@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Loader2, ScanSearch, SendHorizontal, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -9,24 +10,34 @@ import { cn } from "@/lib/utils";
 import type { ThreadItem, Phase } from "@/lib/use-session";
 import { MAX_ROUNDS } from "@/agent/schemas";
 
+function AgentAvatar() {
+  return (
+    <span className="bg-primary/10 text-primary flex size-7 shrink-0 items-center justify-center rounded-full">
+      <ScanSearch className="size-3.5" strokeWidth={2.25} />
+    </span>
+  );
+}
+
 function Bubble({
   side,
   children,
-  muted,
 }: {
   side: "left" | "right";
   children: React.ReactNode;
-  muted?: boolean;
 }) {
   return (
-    <div className={cn("flex", side === "right" ? "justify-end" : "justify-start")}>
+    <div
+      className={cn(
+        "flex animate-in fade-in slide-in-from-bottom-1 duration-300",
+        side === "right" ? "justify-end" : "justify-start"
+      )}
+    >
       <div
         className={cn(
-          "max-w-[85%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap",
+          "max-w-[85%] px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-wrap",
           side === "right"
-            ? "bg-primary text-primary-foreground"
-            : "bg-muted",
-          muted && "text-muted-foreground animate-pulse"
+            ? "bg-primary text-primary-foreground rounded-lg rounded-br-sm"
+            : "bg-muted rounded-lg rounded-tl-sm"
         )}
       >
         {children}
@@ -72,28 +83,44 @@ export function ChatPanel({
   };
 
   return (
-    <Card className="flex min-h-0 flex-1 flex-col gap-0 overflow-hidden p-0">
+    <Card className="flex min-h-0 flex-1 flex-col gap-0 overflow-hidden p-0 shadow-sm">
       <ScrollArea className="min-h-0 flex-1">
-        <div className="space-y-3 p-4">
+        <div className="space-y-4 p-4">
           <Bubble side="right">{rawIdea}</Bubble>
 
           {thread.map((item) => (
-            <div key={item.round} className="space-y-3">
-              <div className="space-y-1">
-                <p className="text-muted-foreground text-xs">
-                  Question {item.round} of {MAX_ROUNDS}
-                </p>
-                <Bubble side="left">{item.question}</Bubble>
+            <div key={item.round} className="space-y-4">
+              <div className="flex gap-2.5 animate-in fade-in slide-in-from-bottom-1 duration-300">
+                <AgentAvatar />
+                <div className="min-w-0 space-y-1">
+                  <p className="text-muted-foreground text-[11px] font-medium tracking-wide uppercase">
+                    Question {item.round} of {MAX_ROUNDS}
+                  </p>
+                  <div className="bg-muted max-w-full rounded-lg rounded-tl-sm px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-wrap">
+                    {item.question}
+                  </div>
+                </div>
               </div>
               {item.answer !== null && <Bubble side="right">{item.answer}</Bubble>}
             </div>
           ))}
 
-          {thinking && <Bubble side="left" muted>{stage ?? "Thinking"}…</Bubble>}
+          {thinking && (
+            <div className="flex items-center gap-2.5 animate-in fade-in duration-300">
+              <AgentAvatar />
+              <div className="bg-muted text-muted-foreground flex items-center gap-2 rounded-lg rounded-tl-sm px-3.5 py-2.5 text-sm">
+                <Loader2 className="size-3.5 animate-spin" />
+                {stage ?? "Thinking"}…
+              </div>
+            </div>
+          )}
 
           {error && (
-            <div className="border-destructive/40 bg-destructive/10 text-destructive flex items-center justify-between gap-3 rounded-md border px-3 py-2 text-sm">
-              <span>{error}</span>
+            <div className="border-destructive/30 bg-destructive/5 text-destructive flex items-center justify-between gap-3 rounded-md border px-3 py-2.5 text-sm animate-in fade-in duration-300">
+              <span className="flex items-center gap-2">
+                <TriangleAlert className="size-4 shrink-0" />
+                {error}
+              </span>
               {canRetry && (
                 <Button size="sm" variant="outline" onClick={onRetry}>
                   Retry
@@ -106,7 +133,7 @@ export function ChatPanel({
         </div>
       </ScrollArea>
 
-      <div className="flex items-end gap-2 border-t p-3">
+      <div className="bg-muted/30 flex items-end gap-2 border-t p-3">
         <Textarea
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
@@ -125,9 +152,10 @@ export function ChatPanel({
           }
           rows={2}
           disabled={phase !== "awaiting_answer" || !openQuestion}
-          className="min-h-0 resize-none"
+          className="bg-background min-h-0 resize-none"
         />
-        <Button onClick={send} disabled={!canSend}>
+        <Button onClick={send} disabled={!canSend} aria-label="Send answer">
+          <SendHorizontal className="size-4" />
           Send
         </Button>
       </div>

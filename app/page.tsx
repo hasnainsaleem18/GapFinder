@@ -1,5 +1,6 @@
 "use client";
 
+import { Loader2, RotateCcw, ScanSearch } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { IdeaForm } from "@/components/idea-form";
 import { ChatPanel } from "@/components/chat-panel";
@@ -12,8 +13,9 @@ export default function Home() {
 
   if (session.phase === "restoring") {
     return (
-      <main className="text-muted-foreground flex min-h-dvh items-center justify-center text-sm">
-        Loading…
+      <main className="text-muted-foreground flex min-h-dvh items-center justify-center gap-2 text-sm">
+        <Loader2 className="size-4 animate-spin" />
+        Restoring your session…
       </main>
     );
   }
@@ -31,20 +33,28 @@ export default function Home() {
   }
 
   return (
-    <div className="flex h-dvh flex-col">
-      <header className="flex items-center justify-between border-b px-4 py-3">
-        <div>
-          <h1 className="text-sm font-semibold">Requirement Clarification Agent</h1>
-          <p className="text-muted-foreground max-w-xl truncate text-xs">
-            {session.rawIdea}
-          </p>
+    <div className="bg-muted/40 flex h-dvh flex-col">
+      <header className="bg-background flex items-center justify-between gap-4 border-b px-5 py-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="bg-primary text-primary-foreground flex size-7 shrink-0 items-center justify-center rounded-md">
+            <ScanSearch className="size-4" strokeWidth={2.25} />
+          </span>
+          <div className="min-w-0">
+            <h1 className="font-heading text-sm font-semibold tracking-tight">
+              GapFinder
+            </h1>
+            <p className="text-muted-foreground max-w-lg truncate text-xs">
+              {session.rawIdea}
+            </p>
+          </div>
         </div>
-        <Button variant="ghost" size="sm" onClick={session.reset}>
-          Start new session
+        <Button variant="outline" size="sm" onClick={session.reset}>
+          <RotateCcw className="size-3.5" />
+          New session
         </Button>
       </header>
 
-      <div className="mx-auto grid w-full max-w-5xl min-h-0 flex-1 gap-4 p-4 lg:grid-cols-[1fr_320px]">
+      <div className="mx-auto grid w-full max-w-5xl min-h-0 flex-1 gap-5 p-5 lg:grid-cols-[1fr_320px]">
         <div className="flex min-h-0 flex-col">
           {session.phase === "complete" && session.doc ? (
             <DocView doc={session.doc} onReset={session.reset} />

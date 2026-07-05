@@ -1,5 +1,6 @@
 "use client";
 
+import { CircleAlert, CircleCheck, CircleDashed, ListChecks } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -8,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import type { Category, GapReport, RequirementStatus } from "@/agent/schemas";
 
 // Display order mirrors the agent's questioning priority.
@@ -21,13 +23,30 @@ const ROWS: { key: Category; label: string }[] = [
   { key: "non_functional", label: "Non-functional" },
 ];
 
-const BADGE: Record<
+const STATUS: Record<
   RequirementStatus,
-  { variant: "default" | "secondary" | "outline"; label: string }
+  { label: string; icon: typeof CircleCheck; iconClass: string; badgeClass: string }
 > = {
-  resolved: { variant: "default", label: "resolved" },
-  ambiguous: { variant: "secondary", label: "ambiguous" },
-  missing: { variant: "outline", label: "missing" },
+  resolved: {
+    label: "Resolved",
+    icon: CircleCheck,
+    iconClass: "text-emerald-600 dark:text-emerald-400",
+    badgeClass:
+      "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-300",
+  },
+  ambiguous: {
+    label: "Ambiguous",
+    icon: CircleAlert,
+    iconClass: "text-amber-600 dark:text-amber-400",
+    badgeClass:
+      "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/50 dark:text-amber-300",
+  },
+  missing: {
+    label: "Missing",
+    icon: CircleDashed,
+    iconClass: "text-muted-foreground/60",
+    badgeClass: "border-dashed bg-transparent text-muted-foreground",
+  },
 };
 
 export function ChecklistPanel({ gaps }: { gaps: GapReport | null }) {
@@ -36,41 +55,71 @@ export function ChecklistPanel({ gaps }: { gaps: GapReport | null }) {
     : 0;
 
   return (
-    <Card className="h-fit">
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between text-base">
-          Requirement checklist
-          <span className="text-muted-foreground text-sm font-normal">
+    <Card className="h-fit gap-4 py-5 shadow-sm">
+      <CardHeader className="px-5">
+        <CardTitle className="flex items-center justify-between text-sm font-semibold">
+          <span className="flex items-center gap-2">
+            <ListChecks className="text-primary size-4" />
+            Requirements checklist
+          </span>
+          <span className="text-muted-foreground text-xs font-medium tabular-nums">
             {resolved}/7 resolved
           </span>
         </CardTitle>
-        <CardDescription>Updated after every answer</CardDescription>
+        <CardDescription className="text-xs">
+          Updates after every answer
+        </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-3">
-        {ROWS.map(({ key, label }) => {
-          const gap = gaps?.[key];
-          const badge = gap ? BADGE[gap.status] : null;
-          return (
-            <div key={key} className="space-y-0.5">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-sm font-medium">{label}</span>
-                {badge ? (
-                  <Badge variant={badge.variant}>{badge.label}</Badge>
-                ) : (
-                  <Badge variant="ghost">pending</Badge>
+      <CardContent className="px-5">
+        <div className="divide-border/70 divide-y">
+          {ROWS.map(({ key, label }) => {
+            const gap = gaps?.[key];
+            const status = gap ? STATUS[gap.status] : null;
+            const Icon = status?.icon ?? CircleDashed;
+            return (
+              <div key={key} className="space-y-1 py-2.5 first:pt-0 last:pb-0">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="flex min-w-0 items-center gap-2 text-sm">
+                    <Icon
+                      className={cn(
+                        "size-4 shrink-0 transition-colors duration-300",
+                        status?.iconClass ?? "text-muted-foreground/40"
+                      )}
+                    />
+                    <span className="truncate font-medium">{label}</span>
+                  </span>
+                  {status ? (
+                    <Badge
+                      key={gap!.status}
+                      variant="outline"
+                      className={cn(
+                        "shrink-0 text-[11px] animate-in fade-in zoom-in-95 duration-300",
+                        status.badgeClass
+                      )}
+                    >
+                      {status.label}
+                    </Badge>
+                  ) : (
+                    <Badge
+                      variant="outline"
+                      className="text-muted-foreground shrink-0 border-dashed text-[11px]"
+                    >
+                      Pending
+                    </Badge>
+                  )}
+                </div>
+                {gap?.resolvedValue && (
+                  <p
+                    className="text-muted-foreground line-clamp-2 pl-6 text-xs leading-relaxed"
+                    title={gap.resolvedValue}
+                  >
+                    {gap.resolvedValue}
+                  </p>
                 )}
               </div>
-              {gap?.resolvedValue && (
-                <p
-                  className="text-muted-foreground line-clamp-2 text-xs"
-                  title={gap.resolvedValue}
-                >
-                  {gap.resolvedValue}
-                </p>
-              )}
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </CardContent>
     </Card>
   );
