@@ -187,9 +187,20 @@ async function generateRequirementsDoc(
     ["human", transcript(state)],
   ]);
 
+  // Code-level correction: the model occasionally tags a genuinely RESOLVED
+  // category as "(unresolved)" when it's flagging some interpretive detail
+  // it's unsure about. That contradicts requirement_state and misleads the
+  // reader, so fix the label rather than trust the model's tagging.
+  const mislabelPattern = (c: Category) =>
+    new RegExp(`^\\s*(${c}|${c.replace(/_/g, " ")})\\s*\\(unresolved\\)`, "i");
+  const correctedAssumptions = doc.assumptions.map((a) => {
+    const falselyUnresolved = resolved.find((c) => mislabelPattern(c).test(a.trim()));
+    return falselyUnresolved ? a.replace(/\(unresolved\)/i, "(note)") : a;
+  });
+
   // Code-level guarantee of "never silently guess": any unresolved category
   // the model failed to mention in assumptions gets an explicit entry.
-  const assumptions = [...doc.assumptions];
+  const assumptions = [...correctedAssumptions];
   for (const c of unresolved) {
     const mentioned = assumptions.some((a) =>
       a.toLowerCase().includes(c.replace(/_/g, " ")) || a.toLowerCase().includes(c)

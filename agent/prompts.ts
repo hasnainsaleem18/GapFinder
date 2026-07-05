@@ -155,6 +155,10 @@ ${unresolvedBlock || "(none)"}
 - Only genuine assumptions beyond that. If every category is resolved and you
   assumed nothing, return an EMPTY list — never pad with "X is sufficient" or
   restatements of resolved facts.
+- NEVER write "(unresolved)" next to a category that appears in the RESOLVED
+  list above — that tag is reserved exclusively for categories in the
+  UNRESOLVED list. If you need to note an interpretive detail about a
+  RESOLVED category, label it "(note)", not "(unresolved)".
 
 ## risks
 - Real delivery/product risks for THIS idea — tie them to what was said and what stayed unresolved. No boilerplate ("the project may be delayed").`;

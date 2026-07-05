@@ -54,9 +54,36 @@ export function useClarificationSession() {
       return;
     }
     getSession(id)
-      .then((snap) => {
+      .then(async (snap) => {
+        const last = snap.qaHistory[snap.qaHistory.length - 1];
+        // An "interrupted" round: the last question was answered (so the
+        // server has no open question to attach a new answer to), but the
+        // session never advanced to a new question or the final doc — e.g.
+        // an LLM call failed after saveAnswer() succeeded but before the
+        // graph finished. Left alone, the composer stays disabled forever
+        // ("Waiting for the agent…") with no error and no visible retry.
+        // Recover by resubmitting the same answer — the backend's retry
+        // matching (see agent/runner.ts prepareAnswer) treats this as the
+        // same round and continues normally.
+        const interrupted =
+          snap.status === "gathering" && !!last && last.answer !== null;
+
+        if (!interrupted) {
+          setState({
+            phase: snap.status === "complete" ? "complete" : "awaiting_answer",
+            sessionId: snap.sessionId,
+            rawIdea: snap.rawIdea,
+            thread: snap.qaHistory,
+            gaps: snap.gaps,
+            doc: snap.doc,
+            stage: null,
+            error: null,
+          });
+          return;
+        }
+
         setState({
-          phase: snap.status === "complete" ? "complete" : "awaiting_answer",
+          phase: "thinking",
           sessionId: snap.sessionId,
           rawIdea: snap.rawIdea,
           thread: snap.qaHistory,
@@ -65,11 +92,22 @@ export function useClarificationSession() {
           stage: null,
           error: null,
         });
+        setPending({ kind: "answer", text: last.answer! });
+        try {
+          const result = await submitAnswer(snap.sessionId, last.answer!, (label) =>
+            setState((s) => ({ ...s, stage: label }))
+          );
+          setPending(null);
+          applyResult(result);
+        } catch (err) {
+          fail(err);
+        }
       })
       .catch(() => {
         localStorage.removeItem(STORAGE_KEY);
         setState((s) => ({ ...s, phase: "idle" }));
       });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const applyResult = useCallback((result: RoundResult) => {
