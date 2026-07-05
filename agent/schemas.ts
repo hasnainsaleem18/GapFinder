@@ -8,6 +8,14 @@ export const CATEGORIES = Constants.public.Enums
   .requirement_category as readonly Category[];
 
 /**
+ * Max clarification rounds before the doc is generated regardless of
+ * remaining gaps. Lives here (not agent/graph.ts) so client components can
+ * import the real value instead of duplicating it as a hardcoded number —
+ * this file has no server-only dependencies (no LangGraph/Supabase imports).
+ */
+export const MAX_ROUNDS = 10;
+
+/**
  * Question-targeting priority: core product shape first, cross-cutting
  * concerns last. Order is strict — an unresolved core category is always
  * targeted before a peripheral one, regardless of missing vs ambiguous.

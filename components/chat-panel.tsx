@@ -7,6 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import type { ThreadItem, Phase } from "@/lib/use-session";
+import { MAX_ROUNDS } from "@/agent/schemas";
 
 function Bubble({
   side,
@@ -80,7 +81,7 @@ export function ChatPanel({
             <div key={item.round} className="space-y-3">
               <div className="space-y-1">
                 <p className="text-muted-foreground text-xs">
-                  Question {item.round} of 4
+                  Question {item.round} of {MAX_ROUNDS}
                 </p>
                 <Bubble side="left">{item.question}</Bubble>
               </div>

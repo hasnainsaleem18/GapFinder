@@ -4,6 +4,7 @@ import { saveGaps, saveQuestion, saveDoc, type QaEntry } from "./db";
 import {
   CATEGORIES,
   CATEGORY_PRIORITY,
+  MAX_ROUNDS,
   ExtractionSchema,
   DocSchema,
   type Category,
@@ -18,7 +19,7 @@ import {
   docSystem,
 } from "./prompts";
 
-export const MAX_ROUNDS = 4;
+export { MAX_ROUNDS };
 
 // ── State schema ─────────────────────────────────────────────────────
 
