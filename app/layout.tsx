@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Source_Serif_4 } from "next/font/google";
 import "./globals.css";
 
-// Body: Geist (clean, precise). Headings: Source Serif 4 — a restrained serif
-// that suits a requirements-document tool. Wired to --font-sans / --font-display,
-// which globals.css maps to the `font-sans` / `font-heading` utilities.
+// geist for body, source serif for headings — the serif makes it feel like
+// a document tool instead of yet another dashboard. globals.css maps these
+// vars to the font-sans / font-heading utilities.
 const geistSans = Geist({
   variable: "--font-sans",
   subsets: ["latin"],
@@ -37,9 +37,9 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} ${sourceSerif.variable} h-full antialiased`}
     >
-      {/* suppressHydrationWarning: browser extensions inject attributes into
-          <body> before hydration; this silences only attribute mismatches on
-          this element, not real errors in the app tree. */}
+      {/* browser extensions (password managers etc.) inject attributes into
+          <body> before react hydrates and it screams about the mismatch.
+          this only mutes attribute diffs on body — real bugs still surface. */}
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
         {children}
       </body>

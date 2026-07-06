@@ -46,7 +46,7 @@ export function useClarificationSession() {
   const [state, setState] = useState<SessionUiState>(INITIAL);
   const [pending, setPending] = useState<PendingAction | null>(null);
 
-  // Restore a previous session on mount (single-session-per-browser).
+  // restore whatever session this browser had going (one session per browser)
   useEffect(() => {
     const id = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
     if (!id) {
@@ -56,15 +56,13 @@ export function useClarificationSession() {
     getSession(id)
       .then(async (snap) => {
         const last = snap.qaHistory[snap.qaHistory.length - 1];
-        // An "interrupted" round: the last question was answered (so the
-        // server has no open question to attach a new answer to), but the
-        // session never advanced to a new question or the final doc — e.g.
-        // an LLM call failed after saveAnswer() succeeded but before the
-        // graph finished. Left alone, the composer stays disabled forever
-        // ("Waiting for the agent…") with no error and no visible retry.
-        // Recover by resubmitting the same answer — the backend's retry
-        // matching (see agent/runner.ts prepareAnswer) treats this as the
-        // same round and continues normally.
+        // ugly edge case: answer got saved server-side but the llm died
+        // before producing the next question. session still says "gathering",
+        // last question already answered, nothing open — without this branch
+        // the composer sits disabled saying "waiting for the agent…" forever
+        // after a refresh. resubmitting the same answer text lets the
+        // backend's retry matching (runner.ts prepareAnswer) pick the round
+        // back up like nothing happened.
         const interrupted =
           snap.status === "gathering" && !!last && last.answer !== null;
 
@@ -146,7 +144,7 @@ export function useClarificationSession() {
         : "Something went wrong. Please try again.";
     setState((s) => ({
       ...s,
-      // fall back to a state the user can act from
+      // always land somewhere the user can act from — never a dead phase
       phase: s.sessionId ? "awaiting_answer" : "idle",
       stage: null,
       error: message,
@@ -186,6 +184,8 @@ export function useClarificationSession() {
 
   const answer = useCallback(
     (text: string) => {
+      // optimistically pin the answer onto the open question so it renders
+      // immediately instead of waiting for the round-trip
       setState((s) => ({
         ...s,
         thread: s.thread.map((t, i) =>

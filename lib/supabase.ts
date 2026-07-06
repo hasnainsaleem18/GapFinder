@@ -7,14 +7,10 @@ export type { Database, Json } from "./database.types";
 export type { Tables, TablesInsert, TablesUpdate, Enums } from "./database.types";
 export { Constants } from "./database.types";
 
-/**
- * Service-role client — the single data-access path in this app.
- *
- * Access model: RLS is enabled deny-all for anon; every query runs
- * server-side (API routes / server actions) through this client, scoped
- * by the session UUID the browser holds in a cookie. The `server-only`
- * import makes the build fail if this module ever reaches a client bundle.
- */
+// the one sanctioned data path: service-role client, server side only.
+// RLS is deny-all for anon so this key is the only thing that can touch
+// data — and the "server-only" import up top makes the build fail loudly
+// if this file ever leaks into a client bundle. don't remove it.
 export function createAdminClient(): SupabaseClient<Database> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;

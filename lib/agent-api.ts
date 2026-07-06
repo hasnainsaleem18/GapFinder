@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
 import { RunnerError, type RoundEvent } from "@/agent/runner";
 
-/**
- * HTTP glue for the session API routes: error-code → status mapping and
- * SSE wrapping for the runner's streaming generators.
- */
+// http glue for the session routes — error-code → status mapping, plus
+// wrapping the runner's generators into sse responses. routes stay thin.
 
 const STATUS_BY_CODE: Record<string, number> = {
   invalid_input: 400,
@@ -44,10 +42,8 @@ export function wantsStream(req: Request): boolean {
   return (req.headers.get("accept") ?? "").includes("text/event-stream");
 }
 
-/**
- * Wraps a runner generator into an SSE response:
- *   event: stage|result  data: <json>   — and `event: error` on failure.
- */
+// runner generator → sse response. events: stage | result, plus an error
+// event if something dies mid-stream (client can't rely on http status by then)
 export function sseFromGenerator(gen: AsyncGenerator<RoundEvent>): Response {
   const encoder = new TextEncoder();
 
@@ -74,6 +70,8 @@ export function sseFromGenerator(gen: AsyncGenerator<RoundEvent>): Response {
   return new Response(stream, {
     headers: {
       "content-type": "text/event-stream",
+      // no-transform matters — without it vercel's proxy can buffer the
+      // whole stream and the "live" stages all arrive at once at the end
       "cache-control": "no-cache, no-transform",
       connection: "keep-alive",
     },

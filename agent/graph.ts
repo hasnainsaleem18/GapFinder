@@ -26,7 +26,7 @@ export { MAX_ROUNDS };
 const ClarificationState = Annotation.Root({
   sessionId: Annotation<string>,
   rawIdea: Annotation<string>,
-  /** Questions asked so far (0..MAX_ROUNDS). */
+  // questions asked so far
   round: Annotation<number>({
     reducer: (_prev, next) => next,
     default: () => 0,
@@ -51,7 +51,7 @@ const ClarificationState = Annotation.Root({
     reducer: (_prev, next) => next,
     default: () => null,
   }),
-  /** What this invocation produced — the frontend switches on this. */
+  // what this run produced — the ui switches on it
   outcome: Annotation<"question" | "doc" | null>({
     reducer: (_prev, next) => next,
     default: () => null,
@@ -71,10 +71,9 @@ function transcript(state: ClarificationStateType): string {
 }
 
 function unresolvedOf(gaps: GapReport): Category[] {
-  // Strict category priority: an ambiguous core category (e.g. data_model)
-  // outranks a missing peripheral one — with only MAX_ROUNDS questions,
-  // clarify the core product first. Status shapes HOW the question is
-  // asked (see questionSystem), not the order.
+  // strict priority order on purpose — an ambiguous data_model beats a
+  // missing integrations every time. status only changes how we phrase the
+  // question (see questionSystem), never what we ask about first.
   return CATEGORY_PRIORITY.filter((c) => gaps[c].status !== "resolved");
 }
 
@@ -107,7 +106,10 @@ async function detectGaps(
     CATEGORIES.map((category) => {
       const { captured, value } = extraction[category];
       const hasValue = typeof value === "string" && value.trim().length > 0;
-      // Deterministic mapping; an "explicit" without substance is downgraded.
+      // keeping this deterministic on purpose — don't want gap detection
+      // drifting if the model's in a weird mood. "explicit" with an empty
+      // value gets knocked down to ambiguous (the model sometimes claims
+      // explicit and then writes nothing).
       const status =
         captured === "explicit" && hasValue
           ? "resolved"
@@ -121,7 +123,7 @@ async function detectGaps(
     })
   ) as GapReport;
 
-  await saveGaps(state.sessionId, gaps); // persist after this node
+  await saveGaps(state.sessionId, gaps); // write it down straight away — supabase is our checkpointer
 
   return { gaps };
 }
@@ -156,7 +158,8 @@ async function planNextQuestion(
   ]);
 
   const question = String(res.content).trim();
-  await saveQuestion(state.sessionId, round, question); // persist after this node
+  // save before returning so a refresh mid-round doesn't lose the question
+  await saveQuestion(state.sessionId, round, question);
 
   return { nextQuestion: question, round, outcome: "question" };
 }
@@ -188,10 +191,10 @@ async function generateRequirementsDoc(
     ["human", transcript(state)],
   ]);
 
-  // Code-level correction: the model occasionally tags a genuinely RESOLVED
-  // category as "(unresolved)" when it's flagging some interpretive detail
-  // it's unsure about. That contradicts requirement_state and misleads the
-  // reader, so fix the label rather than trust the model's tagging.
+  // the model sometimes slaps "(unresolved)" on a category we actually
+  // resolved — it's hedging about some detail it wasn't sure of. that would
+  // contradict the checklist sitting right next to the doc, so fix the tag
+  // ourselves instead of trusting the model's labeling.
   const mislabelPattern = (c: Category) =>
     new RegExp(`^\\s*(${c}|${c.replace(/_/g, " ")})\\s*\\(unresolved\\)`, "i");
   const correctedAssumptions = doc.assumptions.map((a) => {
@@ -199,8 +202,8 @@ async function generateRequirementsDoc(
     return falselyUnresolved ? a.replace(/\(unresolved\)/i, "(note)") : a;
   });
 
-  // Code-level guarantee of "never silently guess": any unresolved category
-  // the model failed to mention in assumptions gets an explicit entry.
+  // belt and braces for "never silently guess" — if the model forgot to
+  // list an unresolved category in assumptions, force an entry in.
   const assumptions = [...correctedAssumptions];
   for (const c of unresolved) {
     const mentioned = assumptions.some((a) =>
@@ -214,7 +217,7 @@ async function generateRequirementsDoc(
   }
   const finalDoc: RequirementsDoc = { ...doc, assumptions };
 
-  await saveDoc(state.sessionId, finalDoc); // persist after this node (+ status=complete)
+  await saveDoc(state.sessionId, finalDoc); // final write — also flips the session to complete
 
   return { doc: finalDoc, outcome: "doc" };
 }
@@ -232,14 +235,15 @@ export const clarificationGraph = new StateGraph(ClarificationState)
     "plan_next_question",
     "generate_requirements_doc",
   ])
-  // Both terminal for this invocation: a question returns to the user
-  // (the answer re-enters the graph on the next request — DB is the
-  // checkpointer), a doc completes the session.
+  // both branches end the invocation. vercel kills long-lived functions so
+  // langgraph's native interrupt() is out — each answer comes back as a new
+  // request and we rehydrate from supabase instead.
   .addEdge("plan_next_question", END)
   .addEdge("generate_requirements_doc", END)
   .compile();
 
-// ── Hello-world ping (kept for /api/agent/ping and the status page) ──
+// ── leftover hello-world ping — /status and /api/agent/ping still use it,
+//    cheap to keep around ──
 
 const PingState = Annotation.Root({
   message: Annotation<string>,

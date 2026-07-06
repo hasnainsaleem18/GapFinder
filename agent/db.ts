@@ -2,11 +2,9 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "../lib/database.types";
 import type { Category, GapReport, RequirementsDoc } from "./schemas";
 
-/**
- * Agent-side Supabase access. Uses the service-role key directly instead of
- * lib/supabase.ts because that module imports "server-only", which throws
- * outside Next.js (this code also runs in the standalone tsx server).
- */
+// supabase access for the agent, service key straight up. can't reuse
+// lib/supabase.ts here — its "server-only" import blows up under plain tsx,
+// and the standalone dev server runs this exact code.
 let client: SupabaseClient<Database> | null = null;
 
 function db(): SupabaseClient<Database> {
@@ -110,7 +108,8 @@ export async function saveQuestion(
   if (error) throw new Error(`saveQuestion failed: ${error.message}`);
 }
 
-/** Fills in the answer on the latest unanswered question. */
+// pins the answer onto the newest open question. throws if there isn't one —
+// the runner turns that into a proper 409 upstream.
 export async function saveAnswer(sessionId: string, answer: string): Promise<QaEntry> {
   const { data: open, error: e1 } = await db()
     .from("qa_history")

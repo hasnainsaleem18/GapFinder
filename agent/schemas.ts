@@ -7,19 +7,13 @@ export type RequirementStatus = Enums<"requirement_status">;
 export const CATEGORIES = Constants.public.Enums
   .requirement_category as readonly Category[];
 
-/**
- * Max clarification rounds before the doc is generated regardless of
- * remaining gaps. Lives here (not agent/graph.ts) so client components can
- * import the real value instead of duplicating it as a hardcoded number —
- * this file has no server-only dependencies (no LangGraph/Supabase imports).
- */
-export const MAX_ROUNDS = 10;
+// interview length cap. lives here instead of graph.ts so the ui can import
+// the real number without dragging langgraph into the client bundle.
+export const MAX_ROUNDS = 5;
 
-/**
- * Question-targeting priority: core product shape first, cross-cutting
- * concerns last. Order is strict — an unresolved core category is always
- * targeted before a peripheral one, regardless of missing vs ambiguous.
- */
+// question order: core product shape first, cross-cutting stuff last.
+// strict on purpose — with limited rounds, an ambiguous data_model matters
+// more than a missing integrations, always.
 export const CATEGORY_PRIORITY: readonly Category[] = [
   "data_model",
   "auth_roles",

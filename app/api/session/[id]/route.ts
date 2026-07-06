@@ -20,6 +20,7 @@ export async function GET(
       );
     }
 
+    // only bother fetching the doc once the session's actually done
     const doc =
       snapshot.status === "complete" ? await loadLatestDoc(id) : null;
 

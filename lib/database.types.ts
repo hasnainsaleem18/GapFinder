@@ -1,12 +1,8 @@
-/**
- * Database types for the Requirement Clarification Agent schema.
- *
- * Hand-authored to match supabase/migrations/00001_init.sql in the exact
- * shape `supabase gen types typescript` emits. Once the project is linked,
- * regenerate with:
- *
- *   npx supabase gen types typescript --project-id <ref> --schema public > lib/database.types.ts
- */
+// hand-written to mirror supabase/migrations/00001_init.sql, in the exact
+// shape `supabase gen types typescript` spits out. keeping the regen command
+// here so future-me doesn't have to look it up:
+//
+//   npx supabase gen types typescript --project-id <ref> --schema public > lib/database.types.ts
 
 export type Json =
   | string

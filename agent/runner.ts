@@ -62,7 +62,8 @@ type GraphInput = {
   qaHistory: { round: number; question: string; answer: string | null }[];
 };
 
-/** Wrap LLM/graph failures (rate limits, timeouts, schema misses) uniformly. */
+// whatever the llm/graph throws (429s, timeouts, schema misses) gets
+// flattened into one retryable error code — the ui just shows retry
 function asAgentFailure(err: unknown): never {
   if (err instanceof RunnerError) throw err;
   const detail = err instanceof Error ? err.message : String(err);
@@ -81,11 +82,9 @@ async function invokeGraph(input: GraphInput): Promise<RoundResult> {
   }
 }
 
-/**
- * Streaming variant: yields a stage event as each node starts producing
- * output, then the final result. streamMode "updates" gives one chunk per
- * node keyed by node name; we merge them to rebuild the final state.
- */
+// streaming flavor — yields a stage event per node so the ui can show real
+// progress instead of a spinner, then the final result. "updates" mode emits
+// one chunk per node keyed by name; merging them rebuilds the end state.
 async function* streamGraph(input: GraphInput): AsyncGenerator<RoundEvent> {
   const merged: Record<string, unknown> = { ...input };
   try {
@@ -132,8 +131,9 @@ async function prepareAnswer(sessionId: string, answer: string): Promise<GraphIn
     await saveAnswer(sessionId, text);
   } catch (err) {
     if (err instanceof Error && err.message.includes("no open question")) {
-      // Retry case: the previous request saved this answer but the LLM step
-      // failed afterwards. Re-running the graph is the correct recovery.
+      // retry path: the previous request saved this answer and then the llm
+      // died. re-running the graph is the right recovery — but only if it's
+      // literally the same answer text, otherwise it's a genuine 409.
       const last = snapshot.qaHistory[snapshot.qaHistory.length - 1];
       const isRetry = last?.answer === text;
       if (!isRetry) {
@@ -158,12 +158,12 @@ async function prepareAnswer(sessionId: string, answer: string): Promise<GraphIn
 
 // ── Public API ───────────────────────────────────────────────────────
 
-/** Create a session from a raw idea and run the first clarification round. */
+/** new session from a raw idea + first graph pass */
 export async function startSession(rawIdea: string): Promise<RoundResult> {
   return invokeGraph(await prepareStart(rawIdea));
 }
 
-/** Record the answer, rehydrate from Supabase, re-enter the graph. */
+/** save the answer, rehydrate from supabase, re-enter the graph */
 export async function submitAnswer(
   sessionId: string,
   answer: string
@@ -171,7 +171,7 @@ export async function submitAnswer(
   return invokeGraph(await prepareAnswer(sessionId, answer));
 }
 
-/** Streaming versions — stage events, then the result. */
+/** streaming versions — stage events first, result last */
 export async function* streamStart(rawIdea: string): AsyncGenerator<RoundEvent> {
   yield* streamGraph(await prepareStart(rawIdea));
 }
@@ -183,5 +183,5 @@ export async function* streamAnswer(
   yield* streamGraph(await prepareAnswer(sessionId, answer));
 }
 
-/** Debug/UI helper: current persisted state of a session. */
+/** what's persisted right now — the GET route and hono server read this */
 export { loadSession } from "./db";

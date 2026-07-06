@@ -1,3 +1,5 @@
+// standalone dev server — lets you poke the agent without booting next.js.
+// local only, nothing deploys this (vercel runs the graph via app/api routes).
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { runPing } from "./graph";

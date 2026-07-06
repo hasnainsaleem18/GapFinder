@@ -15,7 +15,7 @@ GapFinder is the middle path: an agent that asks the questions a BA would ask, t
 1. **Paste an idea.** One or two sentences is enough, vague is the point. A "Use example idea" button is there for zero-typing testing.
 2. **The agent asks one targeted question at a time.** Not "tell me more about your requirements" — a specific, scenario-based question grounded in your actual idea ("When a member cancels 30 minutes before class, what happens to their payment and the waitlist spot?"). It always targets whichever requirement category is least understood.
 3. **A live checklist tracks progress on the right.** Seven categories, each badged `resolved` / `ambiguous` / `missing`, updating after every answer.
-4. **After up to 10 rounds, or as soon as everything's resolved, it writes the doc.** User stories, acceptance criteria, and risks — plus an assumptions section that explicitly names every category that never got resolved, instead of quietly inventing an answer for it.
+4. **After up to 5 rounds, or as soon as everything's resolved, it writes the doc.** User stories, acceptance criteria, and risks — plus an assumptions section that explicitly names every category that never got resolved, instead of quietly inventing an answer for it.
 
 No sign-up, no setup. Everything after "paste an idea" happens automatically.
 
@@ -42,7 +42,7 @@ Per HTTP request:
 └──────────┬──────────┘
            ▼
       ◇ any category unresolved
-      ◇ AND round < 10 ?
+      ◇ AND round < 5 ?
       ╱             ╲
    yes                no
     │                  │
@@ -71,7 +71,7 @@ Across the conversation (the outer loop):
                 qa_history) persists everything    [invocation 2] ──▶ question 2 or doc
                 between rounds — no in-memory              │
                 state survives across requests            ▼
-                                                        ... up to 10 rounds ...
+                                                        ... up to 5 rounds ...
 ```
 
 ### The 4 nodes
@@ -191,6 +191,6 @@ These are intentional weekend-scope cuts, not oversights:
 
 - **Single domain lens.** The 7 categories (auth & roles, data model, payments, notifications, security & compliance, integrations, non-functional) are SaaS-shaped and fixed in code. An e-commerce or hardware-adjacent idea gets asked SaaS questions regardless.
 - **No real authentication.** "Single session per browser" is enforced by an unguessable session UUID in `localStorage`, not a login. Anyone with the URL to a specific session can view it; there's no account system to lock it down further, and that's fine for a single-sitting demo, not for production multi-user use.
-- **Hard cap of 10 clarification rounds.** If categories still need real answers after 10 questions, the doc gets generated anyway with the rest labeled as assumptions rather than the interview continuing indefinitely. This keeps the demo bounded but means a genuinely complex or unresponsive-answer idea may end up with more assumptions than a real BA session would tolerate.
+- **Hard cap of 5 clarification rounds.** If categories still need real answers after 5 questions, the doc gets generated anyway with the rest labeled as assumptions rather than the interview continuing indefinitely. This keeps the demo bounded but means a genuinely complex or unresponsive-answer idea may end up with more assumptions than a real BA session would tolerate.
 - **No in-app doc editing.** The generated requirements doc is a read-only view. If something in it needs correcting, the fix today is starting a new session with a better-specified idea, not editing the output directly.
 - **Shared free-tier LLM quota.** Groq's free tier has a daily token budget shared across everyone hitting the live deployment. Heavy testing in a short window can temporarily exhaust it; a request that hits this returns a clear error rather than hanging, but it does mean the live demo can occasionally need a few minutes to recover rather than working every single time, back-to-back, without limit.

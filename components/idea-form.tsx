@@ -36,7 +36,7 @@ export function IdeaForm({
 
   return (
     <main className="relative flex min-h-dvh flex-col overflow-hidden">
-      {/* Quiet backdrop: a single soft wash of the accent, nothing more. */}
+      {/* one soft accent wash — resist the urge to add more */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 h-96 bg-gradient-to-b from-primary/[0.07] to-transparent"

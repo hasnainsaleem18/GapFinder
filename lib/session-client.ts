@@ -2,8 +2,9 @@ import type { RoundResult } from "@/agent/runner";
 import type { GapReport, RequirementsDoc } from "@/agent/schemas";
 import type { QaEntry } from "@/agent/db";
 
-/** Browser-side wrapper for the session API. SSE is consumed via fetch +
- *  ReadableStream because EventSource cannot POST. */
+// browser-side wrapper for the session api. sse comes over fetch +
+// ReadableStream because EventSource can't POST — annoying, but the
+// hand-rolled parser below is only ~20 lines.
 
 export type SessionState = {
   sessionId: string;
@@ -40,7 +41,8 @@ async function throwFromResponse(res: Response): Promise<never> {
   throw new ApiError(code, message, res.status);
 }
 
-/** POST with SSE streaming: reports stage labels, resolves with the result. */
+// POST + sse: onStage fires once per stage label, promise resolves with the
+// final result event
 async function postStreaming(
   url: string,
   payload: unknown,
@@ -84,6 +86,8 @@ async function postStreaming(
     }
   };
 
+  // sse events are blank-line separated — buffer chunks until we have a
+  // complete block, since reads can split mid-event
   for (;;) {
     const { done, value } = await reader.read();
     if (done) break;

@@ -3,13 +3,13 @@ import { submitAnswer, streamAnswer } from "@/agent/runner";
 import { errorToResponse, sseFromGenerator, wantsStream } from "@/lib/agent-api";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+export const maxDuration = 60; // same deal as /start — llm rounds are slow
 
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = await params;
+  const { id } = await params; // params is a promise in next 15+, easy to trip on
 
   let answer = "";
   try {

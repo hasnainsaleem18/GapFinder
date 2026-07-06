@@ -3,7 +3,8 @@ import { startSession, streamStart } from "@/agent/runner";
 import { errorToResponse, sseFromGenerator, wantsStream } from "@/lib/agent-api";
 
 export const dynamic = "force-dynamic";
-// A full graph pass (extract → gaps → question/doc) can take tens of seconds.
+// a full graph pass can run tens of seconds — vercel's default 10s timeout
+// would cut it off mid-generation
 export const maxDuration = 60;
 
 export async function POST(req: Request) {
@@ -18,6 +19,8 @@ export async function POST(req: Request) {
     );
   }
 
+  // browser sends accept: text/event-stream and gets stage events;
+  // curl and tests get plain json without asking
   if (wantsStream(req)) {
     return sseFromGenerator(streamStart(rawIdea));
   }

@@ -16,7 +16,9 @@ export async function GET() {
       if (!error) {
         supabase = "ok";
       } else if (error.code === "PGRST205" || error.code === "42P01") {
-        // PostgREST/Postgres "table not found" — connected, migration not applied
+        // both mean "table not found" — we reached supabase fine, the
+        // migration just hasn't been run yet. worth distinguishing from a
+        // dead connection or the status page sends you chasing the wrong thing
         supabase = "schema_missing";
       } else {
         supabase = "unreachable";

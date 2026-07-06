@@ -1,11 +1,9 @@
 import type { Category, RequirementStatus } from "./schemas";
 
-/**
- * Prompt layer for the clarification agent. One shared DOMAIN_KNOWLEDGE
- * block keeps the resolved/ambiguous/missing rubric consistent across the
- * three LLM nodes; each node gets its own instructions because their output
- * contracts differ (structured extraction / one question / structured doc).
- */
+// all the prompt text lives here, out of the graph code. one shared
+// DOMAIN_KNOWLEDGE block so all three llm nodes grade against the same
+// rubric — but separate per-node prompts, because their output contracts
+// are completely different (structured extraction vs one question vs doc).
 
 export const CATEGORY_LABELS: Record<Category, string> = {
   auth_roles: "Authentication & user roles",

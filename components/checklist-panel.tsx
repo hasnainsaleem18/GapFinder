@@ -12,7 +12,8 @@ import {
 import { cn } from "@/lib/utils";
 import type { Category, GapReport, RequirementStatus } from "@/agent/schemas";
 
-// Display order mirrors the agent's questioning priority.
+// same order the agent asks in — top rows flip to resolved first, which
+// makes the panel feel alive mid-session
 const ROWS: { key: Category; label: string }[] = [
   { key: "data_model", label: "Data model" },
   { key: "auth_roles", label: "Auth & roles" },

@@ -3,8 +3,8 @@ import { runPing } from "@/agent/graph";
 
 export const dynamic = "force-dynamic";
 
-// Same graph as agent/server.ts — this route is the path that deploys
-// to Vercel as a serverless function (no separate agent host needed).
+// same graph the standalone dev server runs, but through the path that
+// actually ships — proves langgraph works inside a vercel function
 export async function GET() {
   const result = await runPing();
   return NextResponse.json({ status: "ok", agent: result });
